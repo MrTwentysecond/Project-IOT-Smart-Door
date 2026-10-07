@@ -1,0 +1,26 @@
+# Hasil build
+bin/
+obj/
+Debug/
+Release/
+*.exe
+*.o
+*.obj
+*.pdb
+*.ilk
+.pio/
+.vs/
+*.user
+*.suo
+# Database lokal (simpan skema di database/*.sql, cadangan di Drive)
+*.db
+*.db-journal
+*.sqbpro
+# Installer hasil kompilasi
+installer/Output/
+# File sistem
+.DS_Store
+Thumbs.db
+# Rahasia
+*.env
+secrets.*
