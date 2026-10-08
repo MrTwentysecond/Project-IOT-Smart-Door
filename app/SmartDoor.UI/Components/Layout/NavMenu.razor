@@ -1,0 +1,54 @@
+@*
+    NavMenu.razor
+    ─────────────────────────────────────────────────────────────────
+    Sidebar navigasi utama aplikasi SmartDoorAccess.
+    Hanya muncul di halaman yang menggunakan MainLayout.
+    (Halaman Login/Home menggunakan EmptyLayout → tidak ada sidebar ini)
+    
+    NavLink → link navigasi Blazor yang otomatis menambah class "active"
+              jika URL saat ini cocok dengan href-nya.
+    ─────────────────────────────────────────────────────────────────
+*@
+
+@* ── Baris atas sidebar: Nama Aplikasi ── *@
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/dashboard">
+            🔐 SmartDoorAccess
+        </a>
+    </div>
+</div>
+
+@* Tombol toggle untuk membuka/menutup nav di layar kecil (mobile) *@
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+@* ── Daftar menu navigasi ── *@
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+
+        @* Menu: Dashboard (halaman utama setelah login) *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="dashboard">
+                <span class="bi bi-speedometer2-nav-menu" aria-hidden="true"></span> Dashboard
+            </NavLink>
+        </div>
+
+        @* Menu: Kelola Admin (CRUD halaman admin) *@
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="admin">
+                <span class="bi bi-person-gear-nav-menu" aria-hidden="true"></span> Kelola Admin
+            </NavLink>
+        </div>
+
+        @* 
+            ── Tambahkan menu baru di bawah ini ──
+            Contoh:
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="pengguna">
+                    <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Pengguna
+                </NavLink>
+            </div>
+        *@
+
+    </nav>
+</div>

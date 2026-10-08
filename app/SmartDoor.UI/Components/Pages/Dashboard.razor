@@ -1,0 +1,962 @@
+@*
+    Dashboard.razor  (route: "/dashboard")
+    ─────────────────────────────────────────────────────────────────
+    Halaman utama sesudah login.
+    Menampilkan:
+      1. Statistik ringkas (stat cards)
+      2. Log Akses Pintu Terbaru (Read-only)
+      3. CRUD Pengguna
+      4. CRUD Kartu RFID
+      5. CRUD Pintu
+    ─────────────────────────────────────────────────────────────────
+*@
+
+@page "/dashboard"
+@layout EmptyLayout
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard – Smart Door Access</PageTitle>
+
+@* ══════════════ NAVBAR ══════════════ *@
+<nav class="db-navbar">
+    <div class="db-nav-brand">
+        <a href="/" class="db-back-link">← Beranda</a>
+        <div class="db-nav-logo">🔐</div>
+        <span class="db-nav-title">
+            <span class="c-smart">Smart</span><span class="c-door">Door</span><span class="c-access">Access</span>
+            <small>/ Dashboard</small>
+        </span>
+    </div>
+    <div class="db-nav-right">
+        <RealtimeClock />
+        <a href="/admin" class="db-nav-cta">👥 Kelola Admin →</a>
+    </div>
+</nav>
+
+<div class="db-page">
+
+    @* ══════════════ PAGE HEADER ══════════════ *@
+    <div class="db-header">
+        <div>
+            <h1 class="db-title">🛡️ Dashboard SmartDoor</h1>
+            <p class="db-subtitle">Pantau dan kelola sistem akses pintu secara real-time</p>
+        </div>
+    </div>
+
+    @* ══════════════ ALERT / NOTIFIKASI ══════════════ *@
+    @if (!string.IsNullOrEmpty(_pesan))
+    {
+        <div class="db-alert @_pesanTipe">
+            <span>@_pesan</span>
+            <button @onclick="() => _pesan = string.Empty" class="alert-close">×</button>
+        </div>
+    }
+
+    @* ══════════════ STAT CARDS ══════════════ *@
+    <div class="stat-grid">
+        <div class="stat-card stat-blue">
+            <div class="stat-icon">👤</div>
+            <div class="stat-info">
+                <span class="stat-value">@_daftarPengguna.Count</span>
+                <span class="stat-label">Total Pengguna</span>
+            </div>
+            <div class="stat-glow glow-blue"></div>
+        </div>
+        <div class="stat-card stat-green">
+            <div class="stat-icon">💳</div>
+            <div class="stat-info">
+                <span class="stat-value">@_daftarKartu.Count</span>
+                <span class="stat-label">Kartu RFID Aktif</span>
+            </div>
+            <div class="stat-glow glow-green"></div>
+        </div>
+        <div class="stat-card stat-amber">
+            <div class="stat-icon">🚪</div>
+            <div class="stat-info">
+                <span class="stat-value">@_daftarPintu.Count</span>
+                <span class="stat-label">Jumlah Pintu</span>
+            </div>
+            <div class="stat-glow glow-amber"></div>
+        </div>
+        <div class="stat-card stat-red">
+            <div class="stat-icon">📋</div>
+            <div class="stat-info">
+                <span class="stat-value">@_daftarLog.Count</span>
+                <span class="stat-label">Total Log Akses</span>
+            </div>
+            <div class="stat-glow glow-red"></div>
+        </div>
+    </div>
+
+    @* ══════════════ LOG AKSES TERBARU ══════════════ *@
+    <div class="db-card mb-section">
+        <div class="db-card-header">
+            <div class="db-card-title">
+                <span class="header-icon">📜</span>
+                <h3>Log Akses Pintu Terbaru</h3>
+            </div>
+            <span class="db-badge">@_daftarLog.Count aktivitas</span>
+        </div>
+        <div class="db-table-wrap">
+            <table class="db-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>UID Dipindai</th>
+                        <th>Waktu</th>
+                        <th>Pintu</th>
+                        <th>Hasil</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var (log, i) in _daftarLog.OrderByDescending(l => l.Waktu).Select((l, i) => (l, i)))
+                    {
+                        <tr>
+                            <td class="td-num">@(i + 1)</td>
+                            <td><code class="uid-badge">@log.UidDipindai</code></td>
+                            <td class="td-time">@log.Waktu.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td>Pintu #@log.IdPintu</td>
+                            <td>
+                                @if (log.Hasil == "Diterima")
+                                {
+                                    <span class="badge-ok">✓ Diterima</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-deny">✗ Ditolak</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* ══════════════ CRUD PENGGUNA ══════════════ *@
+    <div class="db-card mb-section">
+        <div class="db-card-header">
+            <div class="db-card-title">
+                <span class="header-icon">👤</span>
+                <h3>Manajemen Pengguna</h3>
+            </div>
+            <div class="header-actions">
+                <span class="db-badge">@_daftarPengguna.Count orang</span>
+                <button class="btn-add-sm" @onclick="BukaTambahPengguna">＋ Tambah</button>
+            </div>
+        </div>
+
+        @* Form Pengguna *@
+        @if (_showFormPengguna)
+        {
+            <div class="inline-form">
+                <h4 class="form-title">@(_formPengguna.IdPengguna == 0 ? "➕ Tambah Pengguna" : "✏️ Edit Pengguna")</h4>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Nama Lengkap <span class="req">*</span></label>
+                        <input class="form-input" placeholder="Nama pengguna" @bind="_formPengguna.Nama" />
+                    </div>
+                    <div class="form-group">
+                        <label>NIM / NIP <span class="req">*</span></label>
+                        <input class="form-input" placeholder="NIM atau NIP" @bind="_formPengguna.NimNip" />
+                    </div>
+                    <div class="form-group">
+                        <label>ID Admin <span class="req">*</span></label>
+                        <input class="form-input" type="number" placeholder="ID admin" @bind="_formPengguna.IdAdmin" />
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(_errPengguna))
+                {
+                    <p class="form-err">⚠️ @_errPengguna</p>
+                }
+                <div class="form-actions">
+                    <button class="btn-save" @onclick="SimpanPengguna">
+                        @(_formPengguna.IdPengguna == 0 ? "💾 Simpan" : "✔ Update")
+                    </button>
+                    <button class="btn-cancel" @onclick="TutupFormPengguna">Batal</button>
+                </div>
+            </div>
+        }
+
+        <div class="db-table-wrap">
+            @if (_daftarPengguna.Count == 0)
+            {
+                <div class="empty-state">
+                    <span>👤</span>
+                    <p>Belum ada pengguna terdaftar</p>
+                </div>
+            }
+            else
+            {
+                <table class="db-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nama</th>
+                            <th>NIM/NIP</th>
+                            <th>ID Admin</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (p, i) in _daftarPengguna.Select((p, i) => (p, i)))
+                        {
+                            <tr class="@(p.IdPengguna == _konfirmasiHapusPengguna ? "row-danger" : "")">
+                                <td class="td-num">@(i + 1)</td>
+                                <td class="td-bold">@p.Nama</td>
+                                <td><code class="nim-badge">@p.NimNip</code></td>
+                                <td><span class="admin-badge">ADM-@p.IdAdmin.ToString("D3")</span></td>
+                                <td class="td-aksi">
+                                    <button class="btn-edit" @onclick="() => BukaEditPengguna(p)">✏️</button>
+                                    @if (p.IdPengguna == _konfirmasiHapusPengguna)
+                                    {
+                                        <span class="confirm-txt">Hapus?</span>
+                                        <button class="btn-confirm-del" @onclick="() => HapusPengguna(p.IdPengguna)">Ya</button>
+                                        <button class="btn-cancel-del" @onclick="() => _konfirmasiHapusPengguna = -1">Batal</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-delete" @onclick="() => _konfirmasiHapusPengguna = p.IdPengguna">🗑️</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    @* ══════════════ CRUD KARTU RFID ══════════════ *@
+    <div class="db-card mb-section">
+        <div class="db-card-header">
+            <div class="db-card-title">
+                <span class="header-icon">💳</span>
+                <h3>Manajemen Kartu RFID</h3>
+            </div>
+            <div class="header-actions">
+                <span class="db-badge">@_daftarKartu.Count kartu</span>
+                <button class="btn-add-sm" @onclick="BukaTambahKartu">＋ Tambah</button>
+            </div>
+        </div>
+
+        @if (_showFormKartu)
+        {
+            <div class="inline-form">
+                <h4 class="form-title">@(_formKartu.IdKartu == 0 ? "➕ Tambah Kartu RFID" : "✏️ Edit Kartu RFID")</h4>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>UID Kartu <span class="req">*</span></label>
+                        <input class="form-input" placeholder="Contoh: A1B2C3D4" @bind="_formKartu.Uid" />
+                    </div>
+                    <div class="form-group">
+                        <label>ID Pengguna <span class="req">*</span></label>
+                        <input class="form-input" type="number" placeholder="ID pemilik" @bind="_formKartu.IdPengguna" />
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select class="form-input" @bind="_formKartu.Status">
+                            <option value="Aktif">Aktif</option>
+                            <option value="Nonaktif">Nonaktif</option>
+                        </select>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(_errKartu))
+                {
+                    <p class="form-err">⚠️ @_errKartu</p>
+                }
+                <div class="form-actions">
+                    <button class="btn-save" @onclick="SimpanKartu">
+                        @(_formKartu.IdKartu == 0 ? "💾 Simpan" : "✔ Update")
+                    </button>
+                    <button class="btn-cancel" @onclick="TutupFormKartu">Batal</button>
+                </div>
+            </div>
+        }
+
+        <div class="db-table-wrap">
+            @if (_daftarKartu.Count == 0)
+            {
+                <div class="empty-state">
+                    <span>💳</span>
+                    <p>Belum ada kartu RFID terdaftar</p>
+                </div>
+            }
+            else
+            {
+                <table class="db-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>UID</th>
+                            <th>ID Pengguna</th>
+                            <th>Status</th>
+                            <th>Dibuat</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (k, i) in _daftarKartu.Select((k, i) => (k, i)))
+                        {
+                            <tr class="@(k.IdKartu == _konfirmasiHapusKartu ? "row-danger" : "")">
+                                <td class="td-num">@(i + 1)</td>
+                                <td><code class="uid-badge">@k.Uid</code></td>
+                                <td><span class="admin-badge">USR-@k.IdPengguna.ToString("D3")</span></td>
+                                <td>
+                                    @if (k.Status == "Aktif")
+                                    {
+                                        <span class="badge-ok">● Aktif</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-muted">○ Nonaktif</span>
+                                    }
+                                </td>
+                                <td class="td-time">@k.DibuatPada.ToString("dd/MM/yyyy")</td>
+                                <td class="td-aksi">
+                                    <button class="btn-edit" @onclick="() => BukaEditKartu(k)">✏️</button>
+                                    @if (k.IdKartu == _konfirmasiHapusKartu)
+                                    {
+                                        <span class="confirm-txt">Hapus?</span>
+                                        <button class="btn-confirm-del" @onclick="() => HapusKartu(k.IdKartu)">Ya</button>
+                                        <button class="btn-cancel-del" @onclick="() => _konfirmasiHapusKartu = -1">Batal</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-delete" @onclick="() => _konfirmasiHapusKartu = k.IdKartu">🗑️</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    @* ══════════════ CRUD PINTU ══════════════ *@
+    <div class="db-card mb-section">
+        <div class="db-card-header">
+            <div class="db-card-title">
+                <span class="header-icon">🚪</span>
+                <h3>Manajemen Pintu</h3>
+            </div>
+            <div class="header-actions">
+                <span class="db-badge">@_daftarPintu.Count pintu</span>
+                <button class="btn-add-sm" @onclick="BukaTambahPintu">＋ Tambah</button>
+            </div>
+        </div>
+
+        @if (_showFormPintu)
+        {
+            <div class="inline-form">
+                <h4 class="form-title">@(_formPintu.IdPintu == 0 ? "➕ Tambah Pintu" : "✏️ Edit Pintu")</h4>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Nama Pintu <span class="req">*</span></label>
+                        <input class="form-input" placeholder="Contoh: Pintu Lab A" @bind="_formPintu.NamaPintu" />
+                    </div>
+                    <div class="form-group">
+                        <label>Durasi Buka (detik) <span class="req">*</span></label>
+                        <input class="form-input" type="number" placeholder="5" @bind="_formPintu.DurasiBuka" />
+                    </div>
+                    <div class="form-group">
+                        <label>Lokasi</label>
+                        <input class="form-input" placeholder="Gedung/Lantai" @bind="_formPintu.Lokasi" />
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(_errPintu))
+                {
+                    <p class="form-err">⚠️ @_errPintu</p>
+                }
+                <div class="form-actions">
+                    <button class="btn-save" @onclick="SimpanPintu">
+                        @(_formPintu.IdPintu == 0 ? "💾 Simpan" : "✔ Update")
+                    </button>
+                    <button class="btn-cancel" @onclick="TutupFormPintu">Batal</button>
+                </div>
+            </div>
+        }
+
+        <div class="db-table-wrap">
+            @if (_daftarPintu.Count == 0)
+            {
+                <div class="empty-state">
+                    <span>🚪</span>
+                    <p>Belum ada pintu terdaftar</p>
+                </div>
+            }
+            else
+            {
+                <table class="db-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ID</th>
+                            <th>Nama Pintu</th>
+                            <th>Lokasi</th>
+                            <th>Durasi Buka</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var (pintu, i) in _daftarPintu.Select((p, i) => (p, i)))
+                        {
+                            <tr class="@(pintu.IdPintu == _konfirmasiHapusPintu ? "row-danger" : "")">
+                                <td class="td-num">@(i + 1)</td>
+                                <td><code class="uid-badge">PTU-@pintu.IdPintu.ToString("D3")</code></td>
+                                <td class="td-bold">@pintu.NamaPintu</td>
+                                <td class="td-muted">@(string.IsNullOrEmpty(pintu.Lokasi) ? "—" : pintu.Lokasi)</td>
+                                <td><span class="dur-badge">@pintu.DurasiBuka dtk</span></td>
+                                <td class="td-aksi">
+                                    <button class="btn-edit" @onclick="() => BukaEditPintu(pintu)">✏️</button>
+                                    @if (pintu.IdPintu == _konfirmasiHapusPintu)
+                                    {
+                                        <span class="confirm-txt">Hapus?</span>
+                                        <button class="btn-confirm-del" @onclick="() => HapusPintu(pintu.IdPintu)">Ya</button>
+                                        <button class="btn-cancel-del" @onclick="() => _konfirmasiHapusPintu = -1">Batal</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-delete" @onclick="() => _konfirmasiHapusPintu = pintu.IdPintu">🗑️</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+</div>
+
+@code {
+    // ── MODELS ──────────────────────────────────────────
+    private class LogAksesModel
+    {
+        public int IdLog { get; set; }
+        public string UidDipindai { get; set; } = "";
+        public DateTime Waktu { get; set; }
+        public int IdPintu { get; set; }
+        public string Hasil { get; set; } = "";
+    }
+
+    private class PenggunaModel
+    {
+        public int IdPengguna { get; set; }
+        public int IdAdmin { get; set; }
+        public string Nama { get; set; } = "";
+        public string NimNip { get; set; } = "";
+    }
+
+    private class KartuModel
+    {
+        public int IdKartu { get; set; }
+        public int IdPengguna { get; set; }
+        public string Uid { get; set; } = "";
+        public string Status { get; set; } = "Aktif";
+        public DateTime DibuatPada { get; set; } = DateTime.Now;
+    }
+
+    private class PintuModel
+    {
+        public int IdPintu { get; set; }
+        public string NamaPintu { get; set; } = "";
+        public int DurasiBuka { get; set; } = 5;
+        public string Lokasi { get; set; } = "";
+    }
+
+    // ── SEED DATA ────────────────────────────────────────
+    private List<LogAksesModel> _daftarLog = new()
+    {
+        new() { IdLog = 1, UidDipindai = "A1B2C3D4", Waktu = DateTime.Now.AddMinutes(-5),   IdPintu = 1, Hasil = "Diterima" },
+        new() { IdLog = 2, UidDipindai = "EF987654", Waktu = DateTime.Now.AddMinutes(-20),  IdPintu = 2, Hasil = "Ditolak"  },
+        new() { IdLog = 3, UidDipindai = "11223344", Waktu = DateTime.Now.AddHours(-1),     IdPintu = 1, Hasil = "Diterima" },
+        new() { IdLog = 4, UidDipindai = "DEADBEEF", Waktu = DateTime.Now.AddHours(-3),     IdPintu = 2, Hasil = "Ditolak"  },
+    };
+
+    private List<PenggunaModel> _daftarPengguna = new()
+    {
+        new() { IdPengguna = 1, IdAdmin = 1, Nama = "Ibnu",   NimNip = "12345678" },
+        new() { IdPengguna = 2, IdAdmin = 1, Nama = "Falzen", NimNip = "87654321" },
+        new() { IdPengguna = 3, IdAdmin = 2, Nama = "Wahyu",  NimNip = "11223344" },
+    };
+
+    private List<KartuModel> _daftarKartu = new()
+    {
+        new() { IdKartu = 1, IdPengguna = 1, Uid = "A1B2C3D4", Status = "Aktif",    DibuatPada = DateTime.Now.AddDays(-30) },
+        new() { IdKartu = 2, IdPengguna = 2, Uid = "EF987654", Status = "Aktif",    DibuatPada = DateTime.Now.AddDays(-20) },
+        new() { IdKartu = 3, IdPengguna = 3, Uid = "11223344", Status = "Nonaktif", DibuatPada = DateTime.Now.AddDays(-10) },
+    };
+
+    private List<PintuModel> _daftarPintu = new()
+    {
+        new() { IdPintu = 1, NamaPintu = "Pintu Utama Lab",  DurasiBuka = 5, Lokasi = "Gedung A Lt.1" },
+        new() { IdPintu = 2, NamaPintu = "Pintu Server Room", DurasiBuka = 3, Lokasi = "Gedung B Lt.2" },
+    };
+
+    // ── GLOBAL STATE ─────────────────────────────────────
+    private string _pesan      = "";
+    private string _pesanTipe  = "";
+
+    private void Notify(string msg, string tipe) { _pesan = msg; _pesanTipe = tipe; }
+
+    // ════════════════════════════════════════════════════
+    // CRUD PENGGUNA
+    // ════════════════════════════════════════════════════
+    private PenggunaModel _formPengguna   = new();
+    private bool          _showFormPengguna = false;
+    private string        _errPengguna    = "";
+    private int           _konfirmasiHapusPengguna = -1;
+    private int           NextIdPengguna  => _daftarPengguna.Count > 0 ? _daftarPengguna.Max(p => p.IdPengguna) + 1 : 1;
+
+    private void BukaTambahPengguna()
+    {
+        _formPengguna = new PenggunaModel();
+        _errPengguna  = "";
+        _showFormPengguna = true;
+        _konfirmasiHapusPengguna = -1;
+    }
+
+    private void BukaEditPengguna(PenggunaModel p)
+    {
+        _formPengguna = new PenggunaModel { IdPengguna = p.IdPengguna, IdAdmin = p.IdAdmin, Nama = p.Nama, NimNip = p.NimNip };
+        _errPengguna  = "";
+        _showFormPengguna = true;
+        _konfirmasiHapusPengguna = -1;
+    }
+
+    private void SimpanPengguna()
+    {
+        if (string.IsNullOrWhiteSpace(_formPengguna.Nama) || string.IsNullOrWhiteSpace(_formPengguna.NimNip))
+        {
+            _errPengguna = "Nama dan NIM/NIP wajib diisi.";
+            return;
+        }
+
+        if (_formPengguna.IdPengguna == 0)
+        {
+            _daftarPengguna.Add(new PenggunaModel
+            {
+                IdPengguna = NextIdPengguna,
+                IdAdmin    = _formPengguna.IdAdmin,
+                Nama       = _formPengguna.Nama.Trim(),
+                NimNip     = _formPengguna.NimNip.Trim(),
+            });
+            Notify("✅ Pengguna berhasil ditambahkan!", "alert-success");
+        }
+        else
+        {
+            var ex = _daftarPengguna.FirstOrDefault(p => p.IdPengguna == _formPengguna.IdPengguna);
+            if (ex != null) { ex.Nama = _formPengguna.Nama.Trim(); ex.NimNip = _formPengguna.NimNip.Trim(); ex.IdAdmin = _formPengguna.IdAdmin; }
+            Notify("✅ Data pengguna diperbarui!", "alert-success");
+        }
+        TutupFormPengguna();
+    }
+
+    private void HapusPengguna(int id)
+    {
+        var p = _daftarPengguna.FirstOrDefault(x => x.IdPengguna == id);
+        if (p != null) { _daftarPengguna.Remove(p); Notify($"🗑️ Pengguna '{p.Nama}' dihapus.", "alert-danger"); }
+        _konfirmasiHapusPengguna = -1;
+    }
+
+    private void TutupFormPengguna() { _showFormPengguna = false; _formPengguna = new(); _errPengguna = ""; }
+
+    // ════════════════════════════════════════════════════
+    // CRUD KARTU RFID
+    // ════════════════════════════════════════════════════
+    private KartuModel _formKartu      = new();
+    private bool       _showFormKartu  = false;
+    private string     _errKartu       = "";
+    private int        _konfirmasiHapusKartu = -1;
+    private int        NextIdKartu => _daftarKartu.Count > 0 ? _daftarKartu.Max(k => k.IdKartu) + 1 : 1;
+
+    private void BukaTambahKartu()
+    {
+        _formKartu = new KartuModel();
+        _errKartu  = "";
+        _showFormKartu = true;
+        _konfirmasiHapusKartu = -1;
+    }
+
+    private void BukaEditKartu(KartuModel k)
+    {
+        _formKartu = new KartuModel { IdKartu = k.IdKartu, IdPengguna = k.IdPengguna, Uid = k.Uid, Status = k.Status, DibuatPada = k.DibuatPada };
+        _errKartu  = "";
+        _showFormKartu = true;
+        _konfirmasiHapusKartu = -1;
+    }
+
+    private void SimpanKartu()
+    {
+        if (string.IsNullOrWhiteSpace(_formKartu.Uid))
+        {
+            _errKartu = "UID kartu wajib diisi.";
+            return;
+        }
+
+        if (_formKartu.IdKartu == 0)
+        {
+            _daftarKartu.Add(new KartuModel
+            {
+                IdKartu    = NextIdKartu,
+                IdPengguna = _formKartu.IdPengguna,
+                Uid        = _formKartu.Uid.Trim().ToUpper(),
+                Status     = _formKartu.Status,
+                DibuatPada = DateTime.Now,
+            });
+            Notify("✅ Kartu RFID berhasil ditambahkan!", "alert-success");
+        }
+        else
+        {
+            var ex = _daftarKartu.FirstOrDefault(k => k.IdKartu == _formKartu.IdKartu);
+            if (ex != null) { ex.Uid = _formKartu.Uid.Trim().ToUpper(); ex.IdPengguna = _formKartu.IdPengguna; ex.Status = _formKartu.Status; }
+            Notify("✅ Data kartu RFID diperbarui!", "alert-success");
+        }
+        TutupFormKartu();
+    }
+
+    private void HapusKartu(int id)
+    {
+        var k = _daftarKartu.FirstOrDefault(x => x.IdKartu == id);
+        if (k != null) { _daftarKartu.Remove(k); Notify($"🗑️ Kartu '{k.Uid}' dihapus.", "alert-danger"); }
+        _konfirmasiHapusKartu = -1;
+    }
+
+    private void TutupFormKartu() { _showFormKartu = false; _formKartu = new(); _errKartu = ""; }
+
+    // ════════════════════════════════════════════════════
+    // CRUD PINTU
+    // ════════════════════════════════════════════════════
+    private PintuModel _formPintu      = new();
+    private bool       _showFormPintu  = false;
+    private string     _errPintu       = "";
+    private int        _konfirmasiHapusPintu = -1;
+    private int        NextIdPintu => _daftarPintu.Count > 0 ? _daftarPintu.Max(p => p.IdPintu) + 1 : 1;
+
+    private void BukaTambahPintu()
+    {
+        _formPintu = new PintuModel();
+        _errPintu  = "";
+        _showFormPintu = true;
+        _konfirmasiHapusPintu = -1;
+    }
+
+    private void BukaEditPintu(PintuModel p)
+    {
+        _formPintu = new PintuModel { IdPintu = p.IdPintu, NamaPintu = p.NamaPintu, DurasiBuka = p.DurasiBuka, Lokasi = p.Lokasi };
+        _errPintu  = "";
+        _showFormPintu = true;
+        _konfirmasiHapusPintu = -1;
+    }
+
+    private void SimpanPintu()
+    {
+        if (string.IsNullOrWhiteSpace(_formPintu.NamaPintu))
+        {
+            _errPintu = "Nama pintu wajib diisi.";
+            return;
+        }
+
+        if (_formPintu.IdPintu == 0)
+        {
+            _daftarPintu.Add(new PintuModel
+            {
+                IdPintu    = NextIdPintu,
+                NamaPintu  = _formPintu.NamaPintu.Trim(),
+                DurasiBuka = _formPintu.DurasiBuka,
+                Lokasi     = _formPintu.Lokasi.Trim(),
+            });
+            Notify("✅ Pintu berhasil ditambahkan!", "alert-success");
+        }
+        else
+        {
+            var ex = _daftarPintu.FirstOrDefault(p => p.IdPintu == _formPintu.IdPintu);
+            if (ex != null) { ex.NamaPintu = _formPintu.NamaPintu.Trim(); ex.DurasiBuka = _formPintu.DurasiBuka; ex.Lokasi = _formPintu.Lokasi.Trim(); }
+            Notify("✅ Data pintu diperbarui!", "alert-success");
+        }
+        TutupFormPintu();
+    }
+
+    private void HapusPintu(int id)
+    {
+        var p = _daftarPintu.FirstOrDefault(x => x.IdPintu == id);
+        if (p != null) { _daftarPintu.Remove(p); Notify($"🗑️ Pintu '{p.NamaPintu}' dihapus.", "alert-danger"); }
+        _konfirmasiHapusPintu = -1;
+    }
+
+    private void TutupFormPintu() { _showFormPintu = false; _formPintu = new(); _errPintu = ""; }
+}
+
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════════════ */
+:root {
+    --db-bg:       #080c18;
+    --db-card:     #0f1729;
+    --db-card2:    #131f35;
+    --db-border:   rgba(59,130,246,0.14);
+    --db-border-s: rgba(255,255,255,0.06);
+    --db-text:     #e2e8f0;
+    --db-text-s:   #94a3b8;
+    --db-text-m:   #475569;
+    --blue:        #3b82f6;
+    --indigo:      #6366f1;
+    --green:       #22c55e;
+    --amber:       #f59e0b;
+    --red:         #ef4444;
+    --cyan:        #06b6d4;
+}
+
+body { background: var(--db-bg); color: var(--db-text); margin: 0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+/* ─── NAVBAR ─── */
+.db-navbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 40px; height: 64px;
+    background: rgba(8,12,24,0.92);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--db-border);
+    position: sticky; top: 0; z-index: 100; gap: 16px;
+}
+.db-nav-brand { display: flex; align-items: center; gap: 12px; }
+.db-back-link {
+    color: var(--db-text-m); text-decoration: none; font-size: 0.83rem;
+    padding: 4px 10px; border-radius: 7px;
+    border: 1px solid var(--db-border-s); transition: all 0.2s;
+}
+.db-back-link:hover { color: var(--db-text); background: rgba(255,255,255,0.06); }
+.db-nav-logo {
+    font-size: 1.3rem;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 14px rgba(99,102,241,0.4);
+}
+.db-nav-title { font-weight: 700; font-size: 0.98rem; }
+.db-nav-title small { color: var(--db-text-m); font-weight: 400; }
+.c-smart  { color: #60a5fa; }
+.c-door   { color: var(--db-text); }
+.c-access { color: #a78bfa; }
+.db-nav-right { display: flex; align-items: center; gap: 14px; }
+.db-nav-cta {
+    padding: 7px 16px;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    color: #fff; text-decoration: none; border-radius: 9px;
+    font-size: 0.83rem; font-weight: 600;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 4px 14px rgba(59,130,246,0.3);
+}
+.db-nav-cta:hover { opacity: 0.85; transform: translateY(-1px); color: #fff; }
+
+/* ─── PAGE ─── */
+.db-page {
+    max-width: 1280px; margin: 0 auto;
+    padding: 40px 32px 80px;
+}
+.mb-section { margin-bottom: 28px; }
+
+/* ─── HEADER ─── */
+.db-header { margin-bottom: 28px; }
+.db-title { font-size: 1.8rem; font-weight: 800; color: var(--db-text); margin: 0 0 6px; }
+.db-subtitle { color: var(--db-text-s); font-size: 0.9rem; margin: 0; }
+
+/* ─── ALERT ─── */
+.db-alert {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 20px; border-radius: 12px; margin-bottom: 20px;
+    font-size: 0.88rem; font-weight: 500;
+    animation: slideDown 0.3s ease;
+}
+@@keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+.alert-success { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.28); color: #86efac; }
+.alert-danger  { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.28);  color: #fca5a5; }
+.alert-close { background: none; border: none; color: inherit; font-size: 1.2rem; cursor: pointer; opacity: 0.7; padding: 0 4px; }
+.alert-close:hover { opacity: 1; }
+
+/* ─── STAT CARDS ─── */
+.stat-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 18px; margin-bottom: 28px;
+}
+.stat-card {
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; gap: 18px;
+    padding: 24px 22px;
+    background: var(--db-card);
+    border: 1px solid var(--db-border);
+    border-radius: 18px;
+    transition: transform 0.25s, box-shadow 0.25s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+.stat-icon { font-size: 2rem; line-height: 1; z-index: 1; }
+.stat-info { display: flex; flex-direction: column; z-index: 1; }
+.stat-value { font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+.stat-label { font-size: 0.75rem; color: var(--db-text-s); font-weight: 500; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+.stat-glow { position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; border-radius: 50%; filter: blur(30px); opacity: 0.4; }
+.stat-blue .stat-value { color: #60a5fa; }
+.stat-blue { border-color: rgba(59,130,246,0.25); }
+.glow-blue  { background: var(--blue); }
+.stat-green .stat-value { color: #4ade80; }
+.stat-green { border-color: rgba(34,197,94,0.25); }
+.glow-green { background: var(--green); }
+.stat-amber .stat-value { color: #fcd34d; }
+.stat-amber { border-color: rgba(245,158,11,0.25); }
+.glow-amber { background: var(--amber); }
+.stat-red .stat-value { color: #f87171; }
+.stat-red { border-color: rgba(239,68,68,0.25); }
+.glow-red   { background: var(--red); }
+
+/* ─── CARD ─── */
+.db-card {
+    background: var(--db-card);
+    border: 1px solid var(--db-border);
+    border-radius: 20px;
+    overflow: hidden;
+}
+.db-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--db-border-s);
+}
+.db-card-title { display: flex; align-items: center; gap: 10px; }
+.db-card-title h3 { margin: 0; font-size: 0.98rem; font-weight: 700; color: var(--db-text); }
+.header-icon { font-size: 1.1rem; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.db-badge {
+    background: rgba(59,130,246,0.12); color: #93c5fd;
+    font-size: 0.73rem; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid rgba(59,130,246,0.22);
+}
+
+/* ─── INLINE FORM ─── */
+.inline-form {
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--db-border-s);
+    background: rgba(59,130,246,0.04);
+    animation: fadeIn 0.22s ease;
+}
+@@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.form-title { margin: 0 0 18px; font-size: 0.95rem; font-weight: 700; color: var(--db-text); }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.8rem; color: var(--db-text-s); font-weight: 500; }
+.req { color: var(--red); margin-left: 2px; }
+.form-input {
+    padding: 9px 13px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--db-border-s);
+    border-radius: 9px; color: var(--db-text); font-size: 0.88rem;
+    outline: none; transition: border-color 0.2s, background 0.2s;
+    font-family: inherit;
+}
+.form-input:focus { border-color: rgba(59,130,246,0.5); background: rgba(59,130,246,0.07); }
+.form-input::placeholder { color: var(--db-text-m); }
+.form-err { color: #fca5a5; font-size: 0.8rem; margin: 4px 0 0; background: rgba(239,68,68,0.08); padding: 9px 13px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.2); }
+.form-actions { display: flex; gap: 10px; margin-top: 16px; }
+.btn-save {
+    padding: 9px 22px;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    color: #fff; border: none; border-radius: 9px;
+    font-size: 0.87rem; font-weight: 600; cursor: pointer;
+    transition: opacity 0.2s; font-family: inherit;
+}
+.btn-save:hover { opacity: 0.85; }
+.btn-cancel {
+    padding: 9px 18px;
+    background: rgba(255,255,255,0.05); color: var(--db-text-s);
+    border: 1px solid var(--db-border-s); border-radius: 9px;
+    font-size: 0.87rem; cursor: pointer; transition: background 0.2s; font-family: inherit;
+}
+.btn-cancel:hover { background: rgba(255,255,255,0.09); }
+
+/* ─── TABLE ─── */
+.db-table-wrap { overflow-x: auto; }
+.db-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.db-table thead th {
+    padding: 11px 16px; background: rgba(255,255,255,0.025);
+    color: var(--db-text-m); font-weight: 600; font-size: 0.74rem;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--db-border-s); white-space: nowrap;
+}
+.db-table tbody tr { border-bottom: 1px solid var(--db-border-s); transition: background 0.15s; }
+.db-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+.db-table tbody tr:last-child { border-bottom: none; }
+.db-table td { padding: 12px 16px; color: var(--db-text); vertical-align: middle; }
+.td-num  { color: var(--db-text-m); font-size: 0.78rem; }
+.td-bold { font-weight: 600; }
+.td-time { color: var(--db-text-s); font-size: 0.8rem; white-space: nowrap; }
+.td-muted{ color: var(--db-text-s); font-size: 0.83rem; }
+.td-aksi { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+/* Badges */
+.uid-badge  { background: rgba(99,102,241,0.12); color: #a5b4fc; padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-family: monospace; }
+.nim-badge  { background: rgba(6,182,212,0.1); color: #67e8f9;   padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-family: monospace; }
+.admin-badge{ background: rgba(59,130,246,0.12); color: #93c5fd; padding: 3px 9px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+.dur-badge  { background: rgba(245,158,11,0.12); color: #fcd34d; padding: 3px 9px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+.badge-ok   { background: rgba(34,197,94,0.12); color: #4ade80; padding: 3px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+.badge-deny { background: rgba(239,68,68,0.12); color: #f87171; padding: 3px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+.badge-muted{ background: rgba(100,116,139,0.12); color: #94a3b8; padding: 3px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+
+/* Action buttons */
+.btn-add-sm {
+    padding: 6px 14px;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    color: #fff; border: none; border-radius: 8px;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s; font-family: inherit;
+    box-shadow: 0 3px 12px rgba(59,130,246,0.25);
+}
+.btn-add-sm:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-edit {
+    padding: 4px 10px;
+    background: rgba(59,130,246,0.12); color: #93c5fd;
+    border: 1px solid rgba(59,130,246,0.25); border-radius: 7px;
+    font-size: 0.8rem; cursor: pointer; transition: background 0.2s;
+}
+.btn-edit:hover { background: rgba(59,130,246,0.22); }
+.btn-delete {
+    padding: 4px 10px;
+    background: rgba(239,68,68,0.1); color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.22); border-radius: 7px;
+    font-size: 0.8rem; cursor: pointer; transition: background 0.2s;
+}
+.btn-delete:hover { background: rgba(239,68,68,0.2); }
+.confirm-txt { font-size: 0.75rem; color: #fca5a5; font-weight: 600; }
+.btn-confirm-del {
+    padding: 4px 10px; background: var(--red); color: #fff;
+    border: none; border-radius: 7px; font-size: 0.78rem; cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-confirm-del:hover { opacity: 0.85; }
+.btn-cancel-del {
+    padding: 4px 8px; background: transparent; color: var(--db-text-m);
+    border: 1px solid var(--db-border-s); border-radius: 7px;
+    font-size: 0.78rem; cursor: pointer;
+}
+.row-danger { background: rgba(239,68,68,0.04) !important; }
+
+/* Empty state */
+.empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; padding: 50px 20px;
+    color: var(--db-text-m); text-align: center;
+}
+.empty-state span { font-size: 2.5rem; opacity: 0.35; }
+.empty-state p { margin: 0; font-size: 0.9rem; }
+
+/* ─── Responsive ─── */
+@@media (max-width: 900px) {
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .db-page { padding: 24px 16px 60px; }
+    .form-grid-3 { grid-template-columns: 1fr; }
+    .db-navbar { padding: 0 16px; }
+}
+@@media (max-width: 520px) {
+    .stat-grid { grid-template-columns: 1fr; }
+}
+</style>

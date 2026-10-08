@@ -1,0 +1,22 @@
+@* 
+    EmptyLayout.razor
+    ─────────────────────────────────────────────
+    Layout TANPA sidebar / navbar.
+    Dipakai untuk halaman publik seperti Login & Home
+    agar tampilannya full-screen tanpa gangguan.
+    
+    @Body → tempat konten halaman ditampilkan.
+*@
+
+@inherits LayoutComponentBase
+
+<div class="empty-layout-wrapper">
+    @Body
+</div>
+
+@* Pesan error Blazor (muncul otomatis jika ada error koneksi) *@
+<div id="blazor-error-ui" data-nosnippet>
+    Koneksi terputus. 
+    <a href="." class="reload">Muat ulang</a>
+    <span class="dismiss">🗙</span>
+</div>

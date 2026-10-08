@@ -1,0 +1,49 @@
+@*
+    MainLayout.razor
+    ─────────────────────────────────────────────────────────────────
+    Layout UTAMA aplikasi → dipakai untuk halaman yang butuh sidebar.
+    Contoh: Dashboard, Pengguna, Kartu RFID, Log Akses, dll.
+    
+    Struktur:
+    ┌─────────────┬──────────────────────────────────┐
+    │  Sidebar    │  Konten Halaman (@Body)           │
+    │ (NavMenu)   │                                  │
+    └─────────────┴──────────────────────────────────┘
+    
+    Catatan: Halaman Login/Home menggunakan EmptyLayout,
+    BUKAN layout ini.
+    ─────────────────────────────────────────────────────────────────
+*@
+
+@inherits LayoutComponentBase
+
+<div class="page">
+
+    @* Sidebar kiri → memuat komponen NavMenu.razor *@
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    @* Area konten utama (kanan) *@
+    <main>
+
+        @* Baris atas → bisa diisi dengan info user yang sedang login *@
+        <div class="top-row px-4">
+            @* TODO: Tambahkan nama user yang login & tombol logout di sini *@
+        </div>
+
+        @* Konten halaman ditampilkan di sini *@
+        <article class="content px-4">
+            @Body
+        </article>
+
+    </main>
+
+</div>
+
+@* Pesan error Blazor → muncul otomatis jika koneksi ke server terputus *@
+<div id="blazor-error-ui" data-nosnippet>
+    Koneksi terputus.
+    <a href="." class="reload">Muat ulang</a>
+    <span class="dismiss">🗙</span>
+</div>

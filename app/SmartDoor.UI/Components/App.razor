@@ -1,0 +1,68 @@
+@*
+    App.razor
+    ─────────────────────────────────────────────────────────────────
+    Komponen ROOT aplikasi Blazor.
+    File ini adalah titik masuk HTML utama yang dikirim ke browser.
+    
+    Di sini diatur:
+    - <head>: stylesheet, favicon, meta
+    - <body>: Routes (router Blazor) + Blazor script
+    ─────────────────────────────────────────────────────────────────
+*@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="SmartDoorAccess – Sistem manajemen akses pintu berbasis RFID" />
+
+    @* URL dasar aplikasi *@
+    <base href="/" />
+
+    @* Preloader resource (otomatis dari Blazor) *@
+    <ResourcePreloader />
+
+    @* 
+        Google Fonts: Plus Jakarta Sans
+        Font sans-serif modern dengan ketajaman tinggi di layar.
+        Weight yang dimuat: 400 (regular), 500 (medium), 600 (semibold), 700 (bold), 800 (extrabold)
+    *@
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    @* CSS Bootstrap → untuk grid, tabel, badge, dsb. *@
+    <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
+
+    @* CSS kustom aplikasi (wwwroot/app.css) *@
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+
+    @* CSS scoped per-komponen (otomatis digabung oleh Blazor) *@
+    <link rel="stylesheet" href="@Assets["SmartDoorAccess.styles.css"]" />
+
+    @* Import map untuk modul JS *@
+    <ImportMap />
+
+    @* Favicon *@
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    @* Outlet untuk <PageTitle> dan meta dari setiap halaman *@
+    <HeadOutlet />
+</head>
+
+<body>
+    @* 
+        Router Blazor → membaca URL dan menampilkan komponen halaman yang sesuai.
+        Lihat Routes.razor untuk konfigurasi lebih lanjut.
+    *@
+    <Routes />
+
+    @* Modal reconnect → muncul otomatis jika koneksi Blazor terputus *@
+    <ReconnectModal />
+
+    @* Script utama Blazor → WAJIB ada, jangan dihapus *@
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>

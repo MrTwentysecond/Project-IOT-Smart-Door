@@ -1,0 +1,860 @@
+@*
+    Home.razor  (route: "/")
+    ─────────────────────────────────────────────────────────────────
+    Landing Page SmartDoorAccess — versi UI yang disempurnakan.
+
+    Perbaikan yang diterapkan:
+    1. Tipografi: Plus Jakarta Sans (dari Google Fonts), hierarki
+       font konsisten, warna teks lebih kontras (#CBD5E1 untuk body)
+    2. Feature Cards: glassmorphism, glow icon, spacing lebih lega
+    3. Auth Card: tombol Google utama menonjol, sekunder di bawah,
+       border-radius lebih lembut (28px)
+    4. Navbar: active state "pill" berwarna, ikon di setiap menu,
+       scroll-aware shadow
+    ─────────────────────────────────────────────────────────────────
+*@
+
+@page "/"
+@layout EmptyLayout
+
+<PageTitle>SmartDoorAccess – Sistem Akses Pintu Cerdas</PageTitle>
+
+@* ══════════════════════════════════════════════════════════════
+   NAVBAR — Sticky, glassmorphism, active-state dengan pill shape
+   ══════════════════════════════════════════════════════════════ *@
+<nav class="lp-navbar" id="lp-navbar">
+
+    @* ── Kiri: Logo ── *@
+    <a href="/" class="lp-nav-brand">
+        <div class="lp-nav-logo">🔐</div>
+        <span class="lp-nav-name">
+            <span class="c-smart">Smart</span><span class="c-door">Door</span><span class="c-access">Access</span>
+        </span>
+    </a>
+
+    @* ── Tengah: Menu navigasi dengan ikon + active state ── *@
+    <div class="lp-nav-links">
+        @* 
+            Setiap link memiliki:
+            - Ikon emoji/SVG kecil sebagai visual cue
+            - Kelas "nav-active" untuk link yang sedang aktif/di-hover
+            - Efek pill (border-radius: 8px) saat aktif
+        *@
+        <a href="#fitur"     class="lp-nav-link" onclick="setActiveNav(this)">
+            <span class="nav-icon">⚡</span> Fitur
+        </a>
+        <a href="#tentang"   class="lp-nav-link" onclick="setActiveNav(this)">
+            <span class="nav-icon">ℹ️</span> Tentang
+        </a>
+        <a href="/admin"     class="lp-nav-link" onclick="setActiveNav(this)">
+            <span class="nav-icon">👥</span> Kelola Admin
+        </a>
+        <a href="/dashboard" class="lp-nav-link" onclick="setActiveNav(this)">
+            <span class="nav-icon">📊</span> Dashboard
+        </a>
+    </div>
+
+    @* ── Kanan: Jam real-time + tombol CTA ── *@
+    <div class="lp-nav-right">
+        <RealtimeClock />
+        <a href="#login" class="lp-nav-cta">
+            <span>🚀</span> Masuk Sekarang
+        </a>
+    </div>
+</nav>
+
+@* Script kecil untuk active state navbar *@
+<script>
+    function setActiveNav(el) {
+        document.querySelectorAll('.lp-nav-link').forEach(l => l.classList.remove('nav-active'));
+        el.classList.add('nav-active');
+    }
+    // Scroll-aware: tambah shadow saat halaman di-scroll
+    window.addEventListener('scroll', () => {
+        const nav = document.getElementById('lp-navbar');
+        if (nav) nav.classList.toggle('scrolled', window.scrollY > 10);
+    });
+</script>
+
+@* ══════════════════════════════════════════════════════════════
+   HERO SECTION — split layout kiri & kanan
+   ══════════════════════════════════════════════════════════════ *@
+<div class="lp-hero" id="login">
+
+    @* ── Panel Kiri: Hero copy + statistik + feature cards ── *@
+    <div class="lp-left">
+
+        @* Badge kecil *@
+        <div class="hero-badge">
+            <span class="badge-dot"></span>
+            Sistem Akses Kampus Generasi Baru
+        </div>
+
+        @* Judul utama *@
+        <h1 class="hero-title">
+            Kendali Akses Pintu<br />
+            <span class="gradient-text">Lebih Cerdas</span>
+        </h1>
+
+        @* 
+            Deskripsi — warna #CBD5E1 untuk kontras optimal
+            di atas latar belakang #0A0E1A
+        *@
+        <p class="hero-desc">
+            Sistem manajemen akses berbasis RFID yang aman, termonitor, dan mudah dikelola.
+            Pantau siapa yang masuk, kapan, dan dari pintu mana —
+            semuanya dalam satu dashboard terpusat.
+        </p>
+
+        @* Statistik 3 kolom *@
+        <div class="hero-stats">
+            <div class="stat-item">
+                <span class="stat-num">100%</span>
+                <span class="stat-label">Terenkripsi</span>
+            </div>
+            <div class="stat-sep"></div>
+            <div class="stat-item">
+                <span class="stat-num">24/7</span>
+                <span class="stat-label">Monitoring</span>
+            </div>
+            <div class="stat-sep"></div>
+            <div class="stat-item">
+                <span class="stat-num">RFID</span>
+                <span class="stat-label">Teknologi</span>
+            </div>
+        </div>
+
+        @* ── Feature Cards (glassmorphism + glow icon) ── *@
+        <div class="features" id="fitur">
+
+            @*
+                Setiap kartu memiliki:
+                - Ikon dalam lingkaran berpendar (glow effect)
+                - Efek glassmorphism: backdrop-filter blur + border tipis bercahaya
+                - Spacing yang lebih lega: gap 14px, padding 18px 22px
+            *@
+            <div class="feature-card">
+                <div class="feature-icon-wrap fc-blue">
+                    <span class="feature-icon">🛡️</span>
+                </div>
+                <div class="feature-text">
+                    <strong>Akses RFID Terenkripsi</strong>
+                    <p>Setiap kartu teridentifikasi unik dan aman dengan enkripsi penuh</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrap fc-indigo">
+                    <span class="feature-icon">📊</span>
+                </div>
+                <div class="feature-text">
+                    <strong>Log Aktivitas Real-time</strong>
+                    <p>Rekam jejak akses kapan saja, dapat difilter dan diekspor</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrap fc-cyan">
+                    <span class="feature-icon">🚪</span>
+                </div>
+                <div class="feature-text">
+                    <strong>Multi-Pintu Terpusat</strong>
+                    <p>Kelola banyak pintu dari satu panel admin yang intuitif</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    @* ── Panel Kanan: Auth Card ── *@
+    <div class="lp-right">
+        <div class="auth-card">
+
+            @* Header *@
+            <div class="auth-header">
+                <div class="auth-icon-wrap">
+                    <span class="auth-icon">🔓</span>
+                </div>
+                <h2>Selamat Datang</h2>
+                <p>Masuk untuk mengelola sistem akses pintu Anda</p>
+            </div>
+
+            @* Divider *@
+            <div class="auth-divider">
+                <span>Login menggunakan</span>
+            </div>
+
+            @*
+                TOMBOL UTAMA — Login Google
+                Paling menonjol: background putih, teks gelap, shadow biru
+                POST ke /signin-google → endpoint di Program.cs
+                → Google OAuth callback → /dashboard
+            *@
+            <form action="/signin-google" method="post" class="auth-form-google">
+                <button type="submit" class="btn-google-primary">
+                    <svg class="google-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <span>Masuk dengan Google</span>
+                    <span class="btn-arrow">→</span>
+                </button>
+            </form>
+
+            @*
+                OPSI SEKUNDER — dikelompokkan di bawah divider
+                Tampil lebih kecil agar fokus tetap pada tombol Google
+            *@
+            <div class="auth-secondary-divider">
+                <span>atau akses cepat</span>
+            </div>
+
+            @* 
+                Dua tombol sekunder berjajar:
+                - Kelola Admin (CRUD halaman /admin)
+                - Dashboard langsung
+            *@
+            <div class="auth-secondary-btns">
+                <a href="/admin" class="btn-secondary">
+                    <span>👥</span>
+                    <span>Kelola Admin</span>
+                </a>
+                <a href="/dashboard" class="btn-secondary">
+                    <span>📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+
+            @* Catatan keamanan *@
+            <div class="auth-note">
+                <span class="note-icon">🔒</span>
+                <p>Login aman via Google OAuth 2.0 · Hanya akun yang diizinkan admin yang dapat masuk</p>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@* Footer *@
+<footer class="lp-footer" id="tentang">
+    <div class="footer-inner">
+        <span>🔐 <strong>SmartDoorAccess</strong> — Sistem Akses Pintu Berbasis RFID</span>
+        <span class="footer-copy">© 2026 · Dibangun dengan ASP.NET Blazor</span>
+    </div>
+</footer>
+
+<style>
+/* ══════════════════════════════════════════════════════
+   DESIGN TOKENS — variabel CSS global untuk halaman ini
+   ══════════════════════════════════════════════════════ */
+:root {
+    /* Tipografi: Plus Jakarta Sans (dari Google Fonts) */
+    --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+    /* Palet warna utama */
+    --bg:          #080c18;   /* Latar paling gelap */
+    --bg-card:     #0f172a;   /* Latar kartu (sedikit lebih terang) */
+    --bg-panel:    #0d1321;   /* Latar panel kiri */
+
+    /* Teks — hierarki kontras */
+    --text-h:   #F1F5F9;      /* Judul utama — hampir putih */
+    --text-p:   #CBD5E1;      /* Body / deskripsi — abu-abu terang */
+    --text-s:   #94A3B8;      /* Sekunder / label kecil */
+    --text-m:   #64748B;      /* Muted / placeholder */
+
+    /* Aksen warna */
+    --blue:    #3B82F6;
+    --blue-l:  #60A5FA;
+    --indigo:  #6366F1;
+    --cyan:    #06B6D4;
+    --purple:  #A78BFA;
+
+    /* Border */
+    --border:      rgba(59,130,246,0.18);
+    --border-soft: rgba(255,255,255,0.07);
+
+    /* Radius */
+    --r-sm:  8px;
+    --r-md:  14px;
+    --r-lg:  20px;
+    --r-xl:  28px;    /* Border-radius kartu login — lebih lembut */
+}
+
+/* Reset dasar */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-p);
+    /* Terapkan Plus Jakarta Sans ke seluruh halaman */
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ══════════════════════════════════════════════════════
+   NAVBAR — glassmorphism, scroll-aware, active pill
+   ══════════════════════════════════════════════════════ */
+.lp-navbar {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
+    height: 64px;
+    background: rgba(8, 12, 24, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(59,130,246,0.12);
+    transition: box-shadow 0.3s;
+    gap: 24px;
+}
+/* Shadow muncul saat di-scroll (diatur oleh JS) */
+.lp-navbar.scrolled {
+    box-shadow: 0 4px 30px rgba(0,0,0,0.4);
+}
+
+/* ── Brand / Logo ── */
+.lp-nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+.lp-nav-logo {
+    font-size: 1.35rem;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 16px rgba(99,102,241,0.45);
+    flex-shrink: 0;
+}
+.lp-nav-name {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+}
+.c-smart  { color: var(--blue-l); }
+.c-door   { color: var(--text-h); }
+.c-access { color: var(--purple); }
+
+/* ── Menu Links dengan ikon & active pill ── */
+.lp-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    justify-content: center;
+}
+.lp-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-s);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--r-sm);
+    transition: color 0.2s, background 0.2s;
+    letter-spacing: 0.1px;
+}
+.lp-nav-link:hover {
+    color: var(--text-h);
+    background: rgba(255,255,255,0.07);
+}
+/* Active state — pill berwarna biru tipis */
+.lp-nav-link.nav-active {
+    color: var(--blue-l);
+    background: rgba(59,130,246,0.14);
+    border: 1px solid rgba(59,130,246,0.25);
+}
+.nav-icon {
+    font-size: 0.88rem;
+    line-height: 1;
+}
+
+/* ── Kanan: Clock + CTA ── */
+.lp-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+.lp-nav-cta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    color: #fff;
+    text-decoration: none;
+    border-radius: var(--r-sm);
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 4px 18px rgba(59,130,246,0.35);
+    letter-spacing: 0.1px;
+}
+.lp-nav-cta:hover { opacity: 0.88; transform: translateY(-1px); color: #fff; }
+
+/* ══════════════════════════════════════════════════════
+   HERO — split layout
+   ══════════════════════════════════════════════════════ */
+.lp-hero {
+    display: flex;
+    min-height: calc(100vh - 64px);
+    background: var(--bg);
+    overflow: hidden;
+}
+
+/* ── Panel Kiri ── */
+.lp-left {
+    flex: 1.25;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 64px 56px;
+    background: linear-gradient(150deg, #0d1321 0%, #121e38 55%, #0a111f 100%);
+    position: relative;
+}
+/* Dekorasi blur di pojok */
+.lp-left::before {
+    content: '';
+    position: absolute;
+    top: -80px; left: -80px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(59,130,246,0.13) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.lp-left::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: 40px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(99,102,241,0.09) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Badge "pill" kecil di atas judul */
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.28);
+    color: #93C5FD;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 5px 14px 5px 10px;
+    border-radius: 999px;
+    margin-bottom: 22px;
+    width: fit-content;
+    letter-spacing: 0.2px;
+}
+.badge-dot {
+    width: 7px; height: 7px;
+    background: var(--blue-l);
+    border-radius: 50%;
+    animation: pulse-dot 2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@@keyframes pulse-dot {
+    0%,100% { box-shadow: 0 0 0 0 rgba(96,165,250,0.6); }
+    50%      { box-shadow: 0 0 0 5px rgba(96,165,250,0); }
+}
+
+/* Judul utama */
+.hero-title {
+    font-family: var(--font);
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    color: var(--text-h);
+    margin: 0 0 18px;
+}
+/* Gradien biru → ungu pada "Lebih Cerdas" */
+.gradient-text {
+    background: linear-gradient(135deg, var(--blue-l) 0%, var(--purple) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Paragraf deskripsi — warna #CBD5E1, lebih terang dari sebelumnya */
+.hero-desc {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-p);   /* #CBD5E1 — kontras tinggi di latar gelap */
+    line-height: 1.75;
+    max-width: 480px;
+    margin: 0 0 28px;
+    letter-spacing: 0.1px;
+}
+
+/* Statistik ringkas */
+.hero-stats {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 18px 24px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--r-md);
+    margin-bottom: 32px;
+    width: fit-content;
+    backdrop-filter: blur(8px);
+}
+.stat-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.stat-num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--blue-l);
+    letter-spacing: -0.5px;
+}
+.stat-label { font-size: 0.7rem; color: var(--text-m); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-sep { width: 1px; height: 38px; background: var(--border-soft); }
+
+/* ── Feature Cards — glassmorphism + glow icon ── */
+.features {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;   /* Spacing lebih lega dari sebelumnya (12px → 14px) */
+}
+
+/*
+    Glassmorphism card:
+    - background semi-transparan
+    - backdrop-filter blur
+    - border tipis bercahaya
+    - hover: geser kanan + glow
+*/
+.feature-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--r-md);
+    padding: 18px 22px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background 0.25s, transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+    cursor: default;
+}
+.feature-card:hover {
+    background: rgba(59,130,246,0.07);
+    border-color: rgba(59,130,246,0.28);
+    transform: translateX(8px);
+    box-shadow: 0 4px 24px rgba(59,130,246,0.1);
+}
+
+/*
+    Ikon lingkaran berpendar — ukuran 48x48px
+    Setiap warna tema (blue, indigo, cyan) punya glow sendiri
+*/
+.feature-icon-wrap {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.5rem;
+    position: relative;
+}
+/* Biru — untuk RFID */
+.fc-blue {
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.3);
+    box-shadow: 0 0 18px rgba(59,130,246,0.25);
+}
+/* Indigo — untuk Log */
+.fc-indigo {
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.3);
+    box-shadow: 0 0 18px rgba(99,102,241,0.25);
+}
+/* Cyan — untuk Multi-Pintu */
+.fc-cyan {
+    background: rgba(6,182,212,0.13);
+    border: 1px solid rgba(6,182,212,0.28);
+    box-shadow: 0 0 18px rgba(6,182,212,0.2);
+}
+.feature-icon { line-height: 1; }
+.feature-text { display: flex; flex-direction: column; gap: 3px; }
+.feature-text strong {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-h);
+    letter-spacing: 0.1px;
+}
+.feature-text p {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-s);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ── Panel Kanan ── */
+.lp-right {
+    flex: 0.85;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 40px;
+    background: #0a101f;
+    position: relative;
+}
+/* Garis pembatas vertikal */
+.lp-right::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 8%; bottom: 8%;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.25), transparent);
+}
+
+/* ── Auth Card ── */
+/*
+    border-radius: var(--r-xl) = 28px → lebih lembut
+    Padding lebih lega: 48px 40px
+*/
+.auth-card {
+    background: linear-gradient(150deg, #101728, #172038);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: var(--r-xl);
+    padding: 44px 38px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    overflow: hidden;
+    box-shadow:
+        0 30px 60px rgba(0,0,0,0.45),
+        0 0 0 1px rgba(255,255,255,0.04) inset;
+}
+/* Cahaya biru di atas kartu */
+.auth-card::before {
+    content: '';
+    position: absolute;
+    top: -50px; left: 50%;
+    transform: translateX(-50%);
+    width: 240px; height: 90px;
+    background: rgba(59,130,246,0.14);
+    filter: blur(35px);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Header auth card */
+.auth-header { text-align: center; margin-bottom: 28px; }
+.auth-icon-wrap {
+    width: 68px; height: 68px;
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    box-shadow: 0 0 28px rgba(59,130,246,0.2);
+}
+.auth-icon {
+    font-size: 2.2rem;
+    animation: float 3.5s ease-in-out infinite;
+}
+@@keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-7px); }
+}
+.auth-header h2 {
+    font-family: var(--font);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-h);
+    margin: 0 0 6px;
+    letter-spacing: -0.3px;
+}
+.auth-header p {
+    font-size: 0.86rem;
+    color: var(--text-m);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Divider utama */
+.auth-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+    color: var(--text-m);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-soft);
+}
+
+/*
+    TOMBOL GOOGLE — utama & paling menonjol
+    Background putih, teks #111827, shadow biru saat hover
+*/
+.auth-form-google { margin-bottom: 0; }
+.btn-google-primary {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    padding: 14px 20px;
+    background: #fff;
+    color: #111827;
+    border: none;
+    border-radius: var(--r-md);
+    font-family: var(--font);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    letter-spacing: 0.1px;
+    position: relative;
+    overflow: hidden;
+}
+.btn-google-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(59,130,246,0.06), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.btn-google-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 32px rgba(59,130,246,0.3);
+}
+.btn-google-primary:hover::after { opacity: 1; }
+.btn-google-primary:active { transform: translateY(0); }
+.google-svg { width: 22px; height: 22px; flex-shrink: 0; }
+.btn-arrow {
+    margin-left: auto;
+    color: #6b7280;
+    font-size: 1rem;
+    transition: transform 0.2s;
+}
+.btn-google-primary:hover .btn-arrow { transform: translateX(3px); }
+
+/* Divider sekunder */
+.auth-secondary-divider {
+    display: flex; align-items: center; gap: 10px;
+    margin: 18px 0 14px;
+    color: var(--text-m);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.auth-secondary-divider::before,
+.auth-secondary-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-soft);
+}
+
+/*
+    TOMBOL SEKUNDER — berjajar dua kolom
+    Lebih kecil, warna muted, tidak berebut perhatian dengan tombol Google
+*/
+.auth-secondary-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--r-sm);
+    color: var(--text-s);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    letter-spacing: 0.1px;
+}
+.btn-secondary:hover {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(59,130,246,0.25);
+    color: var(--blue-l);
+}
+
+/* Catatan keamanan */
+.auth-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--r-sm);
+}
+.note-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+.auth-note p {
+    margin: 0;
+    font-size: 0.74rem;
+    color: var(--text-m);
+    line-height: 1.55;
+}
+
+/* ══════════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════════ */
+.lp-footer {
+    background: #05070f;
+    border-top: 1px solid var(--border-soft);
+    padding: 20px 48px;
+}
+.footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-m);
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+.footer-copy { color: #334155; }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤900px)
+   ══════════════════════════════════════════════════════ */
+@@media (max-width: 900px) {
+    .lp-navbar { padding: 0 20px; }
+    .lp-nav-links { display: none; }
+    .lp-hero { flex-direction: column; }
+    .lp-left { padding: 40px 24px 28px; }
+    .hero-title { font-size: 2.2rem; }
+    .lp-right { padding: 28px 20px 48px; }
+    .lp-right::before { display: none; }
+    .auth-secondary-btns { grid-template-columns: 1fr; }
+    .lp-footer .footer-inner { flex-direction: column; gap: 6px; text-align: center; }
+    .hero-stats { flex-wrap: wrap; gap: 16px; }
+}
+</style>

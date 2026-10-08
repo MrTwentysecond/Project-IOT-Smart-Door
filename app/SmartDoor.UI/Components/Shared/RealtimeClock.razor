@@ -1,0 +1,111 @@
+@*
+    RealtimeClock.razor  (Shared Component)
+    ─────────────────────────────────────────────────────────────────
+    Komponen jam digital real-time yang update setiap detik.
+    
+    Cara pakai: <RealtimeClock />
+    
+    Menggunakan:
+    - @rendermode InteractiveServer → agar bisa update UI secara live
+    - System.Timers.Timer          → trigger update setiap 1 detik
+    - IDisposable                  → untuk membersihkan timer saat
+                                     komponen dihapus dari halaman
+    ─────────────────────────────────────────────────────────────────
+*@
+
+@* Mode interaktif wajib agar timer bisa update UI *@
+@rendermode InteractiveServer
+
+@* IDisposable → untuk dispose timer saat komponen unmount *@
+@implements IDisposable
+
+<div class="realtime-clock">
+    @* Ikon jam *@
+    <span class="clock-icon">🕐</span>
+
+    <div class="clock-text">
+        @* Tampilkan waktu (jam:menit:detik) *@
+        <span class="clock-time">@_now.ToString("HH:mm:ss")</span>
+        @* Tampilkan tanggal *@
+        <span class="clock-date">@_now.ToString("dddd, dd MMM yyyy")</span>
+    </div>
+</div>
+
+@code {
+    // Menyimpan waktu sekarang → ditampilkan di UI
+    private DateTime _now = DateTime.Now;
+
+    // Timer yang berjalan setiap 1 detik
+    private System.Timers.Timer? _timer;
+
+    // OnInitialized → dipanggil sekali saat komponen pertama kali dimuat
+    protected override void OnInitialized()
+    {
+        // Buat timer dengan interval 1000ms (1 detik)
+        _timer = new System.Timers.Timer(1000);
+
+        // Setiap kali timer "tick" → update _now dan minta Blazor re-render UI
+        _timer.Elapsed += (sender, e) =>
+        {
+            _now = DateTime.Now;
+            InvokeAsync(StateHasChanged); // Update UI dari thread timer
+        };
+
+        _timer.Start(); // Mulai timer
+    }
+
+    // Dispose → wajib hentikan timer agar tidak ada memory leak
+    public void Dispose()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+    }
+}
+
+<style>
+    /* ─── Wrapper jam ─── */
+    .realtime-clock {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 8px 16px;
+        backdrop-filter: blur(8px);
+    }
+
+    .clock-icon {
+        font-size: 1.2rem;
+        animation: tick 1s step-end infinite; /* Kedip setiap detik */
+    }
+
+    /* Animasi kedip ikon jam */
+    @@keyframes tick {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.4; }
+    }
+
+    /* Susun teks waktu & tanggal secara vertikal */
+    .clock-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+    }
+
+    /* Jam digital besar */
+    .clock-time {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #e2e8f0;
+        font-variant-numeric: tabular-nums; /* Lebar digit konsisten agar tidak loncat */
+        letter-spacing: 1px;
+    }
+
+    /* Tanggal kecil di bawah jam */
+    .clock-date {
+        font-size: 0.68rem;
+        color: #64748b;
+        text-transform: capitalize;
+    }
+</style>
