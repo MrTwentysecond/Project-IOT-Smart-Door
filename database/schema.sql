@@ -61,13 +61,20 @@ CREATE TABLE dbo.PINTU (
     id_pintu        INT          NOT NULL,
     nama_pintu      VARCHAR(100) NOT NULL,
     durasi_buka     INT          NULL DEFAULT (5),
+    total_buka      INT          NOT NULL DEFAULT (0),
+    batas_servis    INT          NULL,
+    servis_tiap_hari INT         NULL,
+    servis_terakhir DATETIME2    NULL,
     Status          TINYINT      NULL DEFAULT (1),
     IsDeleted       TINYINT      NULL DEFAULT (0),
     CreatedBy       VARCHAR(32)  NULL,
     CreatedDate     DATETIME2    NULL DEFAULT (SYSDATETIME()),
     LastUpdatedBy   VARCHAR(32)  NULL,
     LastUpdatedDate DATETIME2    NULL,
-    CONSTRAINT PK_PINTU PRIMARY KEY (CompanyCode, id_pintu)
+    CONSTRAINT PK_PINTU PRIMARY KEY (CompanyCode, id_pintu),
+    CONSTRAINT CK_PINTU_batas CHECK (batas_servis IS NULL OR batas_servis >= 0),
+    CONSTRAINT CK_PINTU_hari CHECK (servis_tiap_hari IS NULL OR servis_tiap_hari >= 0),
+    CONSTRAINT CK_PINTU_total CHECK (total_buka >= 0)
 );
 GO
 
@@ -78,6 +85,9 @@ CREATE TABLE dbo.KARTU_RFID (
     id_kartu        INT          NOT NULL,
     id_pengguna     INT          NOT NULL,
     uid_kartu       VARCHAR(32)  NOT NULL,
+    berlaku_sampai  DATETIME2    NULL,
+    maks_pakai      INT          NULL,
+    total_pakai     INT          NOT NULL DEFAULT (0),
     Status          TINYINT      NULL DEFAULT (1),
     IsDeleted       TINYINT      NULL DEFAULT (0),
     CreatedBy       VARCHAR(32)  NULL,
@@ -87,7 +97,9 @@ CREATE TABLE dbo.KARTU_RFID (
     CONSTRAINT PK_KARTU_RFID PRIMARY KEY (CompanyCode, id_kartu),
     CONSTRAINT FK_KARTU_PENGGUNA FOREIGN KEY (CompanyCode, id_pengguna)
         REFERENCES dbo.PENGGUNA (CompanyCode, id_pengguna),
-    CONSTRAINT UQ_KARTU_uid UNIQUE (CompanyCode, uid_kartu)
+    CONSTRAINT UQ_KARTU_uid UNIQUE (CompanyCode, uid_kartu),
+    CONSTRAINT CK_KARTU_maks CHECK (maks_pakai IS NULL OR maks_pakai >= 0),
+    CONSTRAINT CK_KARTU_total CHECK (total_pakai >= 0)
 );
 GO
 
@@ -124,6 +136,7 @@ CREATE TABLE dbo.LOG_AKSES (
     uid_dipindai    VARCHAR(32)  NOT NULL,
     waktu           DATETIME2    NOT NULL DEFAULT (SYSDATETIME()),
     hasil           VARCHAR(16)  NOT NULL,
+    alasan          VARCHAR(32)  NULL,
     Status          TINYINT      NULL DEFAULT (1),
     IsDeleted       TINYINT      NULL DEFAULT (0),
     CreatedBy       VARCHAR(32)  NULL,
