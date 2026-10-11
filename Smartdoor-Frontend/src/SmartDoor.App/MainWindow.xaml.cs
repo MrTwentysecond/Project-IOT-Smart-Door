@@ -15,8 +15,8 @@ public partial class MainWindow : Window
         InitializeComponent();
         var vm = new MainViewModel();
         DataContext = vm;
-        // Falzen: ganti connection string sesuai SQL Server (localdb/SQLEXPRESS).
-        const string cs = "Server=localhost\\SQLEXPRESS;Database=SmartDoor;Trusted_Connection=True;TrustServerCertificate=True";
+        // Falzen: LocalDB jalan di laptop ini. Kalau nanti pakai SQLEXPRESS, ganti ke Server=localhost\SQLEXPRESS.
+        const string cs = @"Server=(localdb)\MSSQLLocalDB;Database=SmartDoor;Trusted_Connection=True;TrustServerCertificate=True";
         var db = new SmartDoorDb(cs);
         var auth = new AuthService(db);
         _serial.UidReceived += uid => _ = vm.OnUidAsync(uid, auth, _serial);
