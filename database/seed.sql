@@ -12,8 +12,8 @@ VALUES ('KEL4', 1, 'admin',
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.PENGGUNA WHERE CompanyCode = 'KEL4' AND id_pengguna = 1)
-INSERT INTO dbo.PENGGUNA (CompanyCode, id_pengguna, id_admin, nama, nim_nip, CreatedBy)
-VALUES ('KEL4', 1, 1, 'Bayu Putra', '12345678', 'admin');
+INSERT INTO dbo.PENGGUNA (CompanyCode, id_pengguna, id_admin, nama, nim_nip, jenis_kelamin, umur, CreatedBy)
+VALUES ('KEL4', 1, 1, 'Bayu Putra', '12345678', 'L', 21, 'admin');
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.PINTU WHERE CompanyCode = 'KEL4' AND id_pintu = 1)

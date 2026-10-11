@@ -1,0 +1,15 @@
+<UserControl x:Class="SmartDoor.App.Views.UserView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Margin="16">
+        <TextBlock Text="{Binding Status}" FontSize="28" FontWeight="Bold"
+                   Foreground="{DynamicResource AppText}"/>
+        <TextBlock Text="Tap terakhir" Margin="0,16,0,4"
+                   Foreground="{DynamicResource AppMuted}"/>
+        <ListBox ItemsSource="{Binding LogTerakhir}" Height="200"
+                 Background="{DynamicResource CardBackground}"
+                 Foreground="{DynamicResource AppText}"/>
+        <Button Content="Masuk sebagai Admin" Command="{Binding ShowAdminCommand}"
+                HorizontalAlignment="Left" Margin="0,16,0,0"/>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,39 @@
+<UserControl x:Class="SmartDoor.App.Views.AdminView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Margin="16">
+            <DockPanel>
+                <TextBlock Text="Mode Admin" FontSize="24" FontWeight="Bold"
+                           Foreground="{DynamicResource AppText}"/>
+                <Button Content="Keluar" Command="{Binding LogoutCommand}"
+                        DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+            </DockPanel>
+            <TextBlock Text="Data Pengguna" Margin="0,16,0,4" FontWeight="Bold"
+                       Foreground="{DynamicResource AppText}"/>
+            <DataGrid ItemsSource="{Binding Users}" AutoGenerateColumns="False"
+                      IsReadOnly="True" Height="180">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Nama" Binding="{Binding Nama}" Width="*"/>
+                    <DataGridTextColumn Header="NIM/NIP" Binding="{Binding NimNip}"/>
+                    <DataGridTextColumn Header="L/P" Binding="{Binding JenisKelamin}"/>
+                    <DataGridTextColumn Header="Umur" Binding="{Binding Umur}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+            <DockPanel Margin="0,16,0,4">
+                <TextBlock Text="Log Akses" FontWeight="Bold"
+                           Foreground="{DynamicResource AppText}"/>
+                <Button Content="Muat Ulang" Command="{Binding LoadAdminDataCommand}"
+                        DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+            </DockPanel>
+            <DataGrid ItemsSource="{Binding Logs}" AutoGenerateColumns="False"
+                      IsReadOnly="True" Height="220">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Waktu" Binding="{Binding Waktu}" Width="*"/>
+                    <DataGridTextColumn Header="UID" Binding="{Binding UidDipindai}"/>
+                    <DataGridTextColumn Header="Hasil" Binding="{Binding Hasil}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

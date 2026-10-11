@@ -38,6 +38,8 @@ CREATE TABLE dbo.PENGGUNA (
     id_admin        INT          NOT NULL,
     nama            VARCHAR(100) NOT NULL,
     nim_nip         VARCHAR(32)  NULL,
+    jenis_kelamin   VARCHAR(16)  NULL,
+    umur            INT          NULL,
     Status          TINYINT      NULL DEFAULT (1),
     IsDeleted       TINYINT      NULL DEFAULT (0),
     CreatedBy       VARCHAR(32)  NULL,
@@ -46,7 +48,9 @@ CREATE TABLE dbo.PENGGUNA (
     LastUpdatedDate DATETIME2    NULL,
     CONSTRAINT PK_PENGGUNA PRIMARY KEY (CompanyCode, id_pengguna),
     CONSTRAINT FK_PENGGUNA_ADMIN FOREIGN KEY (CompanyCode, id_admin)
-        REFERENCES dbo.ADMIN (CompanyCode, id_admin)
+        REFERENCES dbo.ADMIN (CompanyCode, id_admin),
+    CONSTRAINT CK_PENGGUNA_gender CHECK (jenis_kelamin IN ('L', 'P')),
+    CONSTRAINT CK_PENGGUNA_umur CHECK (umur IS NULL OR umur >= 0)
 );
 GO
 

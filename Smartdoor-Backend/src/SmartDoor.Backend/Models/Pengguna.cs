@@ -7,6 +7,8 @@ public sealed record Pengguna(
     int IdAdmin,
     string Nama,
     string? NimNip,
+    string? JenisKelamin,
+    int? Umur,
     byte? Status,
     byte? IsDeleted,
     string? CreatedBy,

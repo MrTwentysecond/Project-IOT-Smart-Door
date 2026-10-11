@@ -2,6 +2,7 @@ using System.Configuration;
 using System.Data;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using SmartDoor.App.Themes;
 using SmartDoor.App.ViewModels;
 using SmartDoor.Backend.Data;
 using SmartDoor.Backend.Services;
@@ -30,6 +31,7 @@ public partial class App : Application
             .AddSingleton<MainWindow>()
             .BuildServiceProvider();
 
+        ThemeHelper.Apply("Terang");
         Services.GetRequiredService<MainWindow>().Show();
     }
 }
