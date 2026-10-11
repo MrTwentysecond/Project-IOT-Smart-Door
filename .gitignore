@@ -1,0 +1,9 @@
+[Bb]in/
+[Oo]bj/
+*.exe
+*.user
+*.suo
+.vs/
+*.db
+*.db-shm
+*.db-wal

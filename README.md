@@ -17,7 +17,8 @@ Arduino Uno, modul RFID RC522, buzzer, LED merah/hijau, relay 1 channel, solenoi
 | Folder | Isi | Penanggung jawab |
 |---|---|---|
 | `firmware/` | Kode Arduino (PlatformIO) | Bayu |
-| `app/` | Kode aplikasi desktop (Visual Studio 2026) | Ibnu (UI), Falzen (backend) |
+| `Smartdoor-Frontend/` | Aplikasi desktop WPF C# (Ibnu) — `src/SmartDoor.App/` berisi `Views/`, `ViewModels/` | Ibnu |
+| `Smartdoor-Backend/` | Class library C# (Falzen) — `src/SmartDoor.Backend/` berisi `Models/`, `Data/`, `Services/` | Falzen |
 | `database/` | Script SQL dan skema database SQLite | Falzen |
 | `installer/` | Script Inno Setup (`.iss`) | Suripto |
 | `docs/` | Dokumentasi, ERD, panduan, laporan pengujian | Wahyu, Aria |
