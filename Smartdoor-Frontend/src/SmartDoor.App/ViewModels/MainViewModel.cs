@@ -21,11 +21,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     // Dipanggil tiap UID masuk dari Arduino. auth + serial di-wire di MainWindow.
+    // hasil DB = "diterima"/"ditolak"; ke Arduino dikirim "OPEN"/"DENY".
     public async Task OnUidAsync(string uid, AuthService auth, SerialService serial)
     {
         var hasil = await auth.CheckAsync(uid).ConfigureAwait(true);
-        serial.Reply(hasil);
-        Status = hasil == "OPEN" ? $"Terbuka — {uid}" : $"Ditolak — {uid}";
+        serial.Reply(hasil == "diterima" ? "OPEN" : "DENY");
+        Status = hasil == "diterima" ? $"Terbuka — {uid}" : $"Ditolak — {uid}";
         LogTerakhir.Insert(0, $"{DateTime.Now:HH:mm:ss} {uid} -> {hasil}");
     }
 

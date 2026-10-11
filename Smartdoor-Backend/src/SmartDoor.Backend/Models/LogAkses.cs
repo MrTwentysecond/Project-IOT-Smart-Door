@@ -1,4 +1,19 @@
 namespace SmartDoor.Backend.Models;
 
-// Satu baris tap kartu. Hasil = "OPEN" atau "DENY".
-public sealed record LogAkses(int Id, string Uid, DateTime Waktu, string Hasil);
+// LOG_AKSES: catatan tiap tap. IdKartu = null untuk kartu asing.
+// Hasil = "diterima" atau "ditolak". PK = (CompanyCode, IdLog).
+public sealed record LogAkses(
+    string CompanyCode,
+    int IdLog,
+    int? IdKartu,
+    int IdPintu,
+    string UidDipindai,
+    DateTime Waktu,
+    string Hasil,
+    byte? Status,
+    byte? IsDeleted,
+    string? CreatedBy,
+    DateTime? CreatedDate,
+    string? LastUpdatedBy,
+    DateTime? LastUpdatedDate)
+    : BaseEntity(CompanyCode, Status, IsDeleted, CreatedBy, CreatedDate, LastUpdatedBy, LastUpdatedDate);

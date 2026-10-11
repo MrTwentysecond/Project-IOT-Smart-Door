@@ -2,14 +2,15 @@ using SmartDoor.Backend.Data;
 
 namespace SmartDoor.Backend.Services;
 
-// Cocokkan UID -> OPEN/DENY + tulis log.
-public sealed class AuthService(SmartDoorDb db)
+// Cocokkan UID + hak akses pintu -> "diterima"/"ditolak", tulis log.
+// Arduino menerjemahkan ke OPEN/DENY (LED, buzzer, solenoid).
+public sealed class AuthService(SmartDoorDb db, int idPintu = 1, string actor = "app")
 {
     public async Task<string> CheckAsync(string uid, CancellationToken ct = default)
     {
-        var kartu = await db.FindKartuAsync(uid, ct).ConfigureAwait(false);
-        var hasil = kartu is { Aktif: true } ? "OPEN" : "DENY";
-        await db.WriteLogAsync(uid, hasil, ct).ConfigureAwait(false);
-        return hasil; // dikirim balik ke Arduino lewat serial
+        var akses = await db.FindAksesAsync(uid, idPintu, ct).ConfigureAwait(false);
+        var hasil = akses is null ? "ditolak" : "diterima";
+        await db.WriteLogAsync(uid, idPintu, hasil, akses?.Kartu.IdKartu, actor, ct).ConfigureAwait(false);
+        return hasil;
     }
 }

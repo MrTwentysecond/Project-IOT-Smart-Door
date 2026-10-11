@@ -15,7 +15,9 @@ public partial class MainWindow : Window
         InitializeComponent();
         var vm = new MainViewModel();
         DataContext = vm;
-        var db = new SmartDoorDb();
+        // Falzen: ganti connection string sesuai SQL Server (localdb/SQLEXPRESS).
+        const string cs = "Server=localhost\\SQLEXPRESS;Database=SmartDoor;Trusted_Connection=True;TrustServerCertificate=True";
+        var db = new SmartDoorDb(cs);
         var auth = new AuthService(db);
         _serial.UidReceived += uid => _ = vm.OnUidAsync(uid, auth, _serial);
         // TODO: _serial.Start("COM3");
