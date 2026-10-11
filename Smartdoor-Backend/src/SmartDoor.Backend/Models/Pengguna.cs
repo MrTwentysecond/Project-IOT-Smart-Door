@@ -1,6 +1,6 @@
 namespace SmartDoor.Backend.Models;
 
-// PENGGUNA: pemilik kartu (nama, NIM/NIP). PK = (CompanyCode, IdPengguna).
+// PENGGUNA: pemilik kartu. Kontak wajib diisi saat pendaftaran (validasi di backend).
 public sealed record Pengguna(
     string CompanyCode,
     int IdPengguna,
@@ -9,6 +9,7 @@ public sealed record Pengguna(
     string? NimNip,
     string? JenisKelamin,
     int? Umur,
+    string? Kontak,
     byte? Status,
     byte? IsDeleted,
     string? CreatedBy,

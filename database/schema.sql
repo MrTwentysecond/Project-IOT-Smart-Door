@@ -40,6 +40,7 @@ CREATE TABLE dbo.PENGGUNA (
     nim_nip         VARCHAR(32)  NULL,
     jenis_kelamin   VARCHAR(16)  NULL,
     umur            INT          NULL,
+    kontak          VARCHAR(64)  NULL,
     Status          TINYINT      NULL DEFAULT (1),
     IsDeleted       TINYINT      NULL DEFAULT (0),
     CreatedBy       VARCHAR(32)  NULL,

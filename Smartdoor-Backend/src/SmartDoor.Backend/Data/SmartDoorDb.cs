@@ -179,13 +179,13 @@ public sealed class SmartDoorDb(string connectionString)
         return list;
     }
 
-    // Daftar pengguna (admin): nama, NIM/NIP, gender, umur.
+    // Daftar pengguna (admin): nama, NIM/NIP, gender, umur, kontak.
     public async Task<IReadOnlyList<Pengguna>> ReadPenggunaAsync(CancellationToken ct = default)
     {
         const string sql = """
             SELECT CompanyCode, id_pengguna AS IdPengguna, id_admin AS IdAdmin,
                    nama AS Nama, nim_nip AS NimNip, jenis_kelamin AS JenisKelamin,
-                   umur AS Umur, Status, IsDeleted, CreatedBy, CreatedDate,
+                   umur AS Umur, kontak AS Kontak, Status, IsDeleted, CreatedBy, CreatedDate,
                    LastUpdatedBy, LastUpdatedDate
             FROM dbo.PENGGUNA
             WHERE CompanyCode = @co AND ISNULL(IsDeleted, 0) = 0
@@ -199,9 +199,104 @@ public sealed class SmartDoorDb(string connectionString)
         foreach (var r in rows)
             list.Add(new Pengguna(
                 r.CompanyCode, r.IdPengguna, r.IdAdmin, r.Nama, r.NimNip,
-                r.JenisKelamin, r.Umur, r.Status, r.IsDeleted, r.CreatedBy,
+                r.JenisKelamin, r.Umur, r.Kontak, r.Status, r.IsDeleted, r.CreatedBy,
                 r.CreatedDate, r.LastUpdatedBy, r.LastUpdatedDate));
         return list;
+    }
+
+    // Daftarkan pengguna + kartu RFID dalam satu transaksi.
+    // Wajib: nama, jenis_kelamin ('L'/'P'), umur (>= 0), kontak, uid_kartu.
+    // Opsional: nim_nip, berlaku_sampai, maks_pakai, id_pintu[] (hak akses pintu).
+    // Berhasil -> (true, "Terdaftar.", idPengguna). Gagal -> (false, pesan, null).
+    public async Task<DaftarHasil> DaftarkanPenggunaAsync(
+        DaftarPengguna input, string actor, CancellationToken ct = default)
+    {
+        var err = input.CekWajib();
+        if (err is not null) return new DaftarHasil(false, err, null);
+        const string cekUid = """
+            SELECT COUNT(1) FROM dbo.KARTU_RFID
+            WHERE CompanyCode = @co AND uid_kartu = @uid
+            """;
+        const string nextId = """
+            SELECT ISNULL(MAX(id_pengguna), 0) + 1 FROM dbo.PENGGUNA WHERE CompanyCode = @co
+            """;
+        const string nextKartu = """
+            SELECT ISNULL(MAX(id_kartu), 0) + 1 FROM dbo.KARTU_RFID WHERE CompanyCode = @co
+            """;
+        const string nextAkses = """
+            SELECT ISNULL(MAX(id_akses), 0) FROM dbo.HAK_AKSES WHERE CompanyCode = @co
+            """;
+        const string insPengguna = """
+            INSERT INTO dbo.PENGGUNA
+                (CompanyCode, id_pengguna, id_admin, nama, nim_nip, jenis_kelamin, umur, kontak, CreatedBy)
+            VALUES (@co, @id, @admin, @nama, @nim, @gender, @umur, @kontak, @actor)
+            """;
+        const string insKartu = """
+            INSERT INTO dbo.KARTU_RFID
+                (CompanyCode, id_kartu, id_pengguna, uid_kartu, berlaku_sampai, maks_pakai, CreatedBy)
+            VALUES (@co, @kartu, @id, @uid, @laku, @maks, @actor)
+            """;
+        const string insHak = """
+            INSERT INTO dbo.HAK_AKSES (CompanyCode, id_akses, id_kartu, id_pintu, CreatedBy)
+            VALUES (@co, @akses, @kartu, @pintu, @actor)
+            """;
+        await using var con = new SqlConnection(connectionString);
+        await con.OpenAsync(ct).ConfigureAwait(false);
+        await using var tx =
+            await con.BeginTransactionAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var duplikat = await con.QueryFirstAsync<int>(
+                new CommandDefinition(cekUid, new { co = Company, uid = input.UidKartu },
+                transaction: tx,
+                cancellationToken: ct)).ConfigureAwait(false);
+            if (duplikat > 0) return new DaftarHasil(false, "UID kartu sudah terdaftar.", null);
+            var id = await con.QueryFirstAsync<int>(
+                new CommandDefinition(nextId, new { co = Company },
+                transaction: tx,
+                cancellationToken: ct)).ConfigureAwait(false);
+            var idKartu = await con.QueryFirstAsync<int>(
+                new CommandDefinition(nextKartu, new { co = Company },
+                transaction: tx,
+                cancellationToken: ct)).ConfigureAwait(false);
+            await con.ExecuteAsync(new CommandDefinition(insPengguna,
+                new
+                {
+                    co = Company, id, admin = input.IdAdmin, nama = input.Nama!.Trim(),
+                    nim = string.IsNullOrWhiteSpace(input.NimNip) ? null : input.NimNip.Trim(),
+                    gender = input.JenisKelamin, umur = input.Umur,
+                    kontak = input.Kontak!.Trim(), actor
+                },
+                transaction: tx,
+                cancellationToken: ct)).ConfigureAwait(false);
+            await con.ExecuteAsync(new CommandDefinition(insKartu,
+                new
+                {
+                    co = Company, kartu = idKartu, id, uid = input.UidKartu.Trim(),
+                    laku = input.BerlakuSampai, maks = input.MaksPakai, actor
+                },
+                transaction: tx,
+                cancellationToken: ct)).ConfigureAwait(false);
+            var noAkses = await con.QueryFirstAsync<int>(
+                new CommandDefinition(nextAkses, new { co = Company },
+                transaction: tx,
+                cancellationToken: ct)).ConfigureAwait(false);
+            foreach (var pintu in input.IdPintu.Distinct())
+            {
+                noAkses++;
+                await con.ExecuteAsync(new CommandDefinition(insHak,
+                    new { co = Company, akses = noAkses, kartu = idKartu, pintu, actor },
+                    transaction: tx,
+                    cancellationToken: ct)).ConfigureAwait(false);
+            }
+            await tx.CommitAsync(ct).ConfigureAwait(false);
+            return new DaftarHasil(true, "Terdaftar.", id);
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct).ConfigureAwait(false);
+            throw;
+        }
     }
 
     // Daftar kartu + info expired/kuota untuk layar admin.
@@ -350,6 +445,7 @@ public sealed class SmartDoorDb(string connectionString)
         public string? NimNip { get; set; }
         public string? JenisKelamin { get; set; }
         public int? Umur { get; set; }
+        public string? Kontak { get; set; }
         public byte? Status { get; set; }
         public byte? IsDeleted { get; set; }
         public string? CreatedBy { get; set; }
