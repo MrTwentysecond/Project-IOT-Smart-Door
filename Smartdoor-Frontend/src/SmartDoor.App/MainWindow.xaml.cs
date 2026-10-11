@@ -1,25 +1,17 @@
-﻿using System.Windows;
+using System.Windows;
 using SmartDoor.App.ViewModels;
-using SmartDoor.Backend.Data;
 using SmartDoor.Backend.Services;
 
 namespace SmartDoor.App;
 
-// Wiring: serial -> viewmodel -> auth -> db. Tanpa DI framework (cukup untuk 1 window).
+// Window shell: DataContext dari DI (lihat App.xaml.cs).
 public partial class MainWindow : Window
 {
-    private readonly SerialService _serial = new();
-
-    public MainWindow()
+    public MainWindow(MainViewModel vm, SerialService serial)
     {
         InitializeComponent();
-        var vm = new MainViewModel();
         DataContext = vm;
-        // Falzen: LocalDB jalan di laptop ini. Kalau nanti pakai SQLEXPRESS, ganti ke Server=localhost\SQLEXPRESS.
-        const string cs = @"Server=(localdb)\MSSQLLocalDB;Database=SmartDoor;Trusted_Connection=True;TrustServerCertificate=True";
-        var db = new SmartDoorDb(cs);
-        var auth = new AuthService(db);
-        _serial.UidReceived += uid => _ = vm.OnUidAsync(uid, auth, _serial);
-        // TODO: _serial.Start("COM3");
+        // TODO: serial.Start("COM3");
+        _ = serial;
     }
 }

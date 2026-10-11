@@ -1,8 +1,7 @@
 ﻿<Application x:Class="SmartDoor.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:SmartDoor.App"
-             StartupUri="MainWindow.xaml">
+             xmlns:local="clr-namespace:SmartDoor.App">
     <Application.Resources>
          
     </Application.Resources>

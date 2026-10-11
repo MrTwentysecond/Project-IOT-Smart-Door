@@ -1,9 +1,10 @@
+using Dapper;
 using Microsoft.Data.SqlClient;
 using SmartDoor.Backend.Models;
 
 namespace SmartDoor.Backend.Data;
 
-// Akses SQL Server. CompanyCode = 'KEL4' (satu kelompok, satu database).
+// Akses SQL Server via Dapper. CompanyCode = 'KEL4' (satu kelompok, satu database).
 public sealed class SmartDoorDb(string connectionString)
 {
     public const string Company = "KEL4";
@@ -13,9 +14,10 @@ public sealed class SmartDoorDb(string connectionString)
         string uid, int idPintu, CancellationToken ct = default)
     {
         const string sql = """
-            SELECT k.CompanyCode, k.id_kartu, k.id_pengguna, k.uid_kartu,
-                   k.Status, k.IsDeleted, k.CreatedBy, k.CreatedDate,
-                   k.LastUpdatedBy, k.LastUpdatedDate, h.id_pintu
+            SELECT k.CompanyCode, k.id_kartu AS IdKartu, k.id_pengguna AS IdPengguna,
+                   k.uid_kartu AS UidKartu, k.Status, k.IsDeleted, k.CreatedBy,
+                   k.CreatedDate, k.LastUpdatedBy, k.LastUpdatedDate,
+                   h.id_pintu AS IdPintu
             FROM dbo.KARTU_RFID k
             JOIN dbo.HAK_AKSES h
               ON h.CompanyCode = k.CompanyCode AND h.id_kartu = k.id_kartu
@@ -26,18 +28,16 @@ public sealed class SmartDoorDb(string connectionString)
             """;
         await using var con = new SqlConnection(connectionString);
         await con.OpenAsync(ct).ConfigureAwait(false);
-        await using var cmd = new SqlCommand(sql, con);
-        cmd.Parameters.AddWithValue("@co", Company);
-        cmd.Parameters.AddWithValue("@uid", uid);
-        cmd.Parameters.AddWithValue("@pintu", idPintu);
-        await using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        if (!await r.ReadAsync(ct).ConfigureAwait(false)) return null;
+        var cmd = new CommandDefinition(sql,
+            new { co = Company, uid, pintu = idPintu },
+            cancellationToken: ct);
+        var row = await con.QueryFirstOrDefaultAsync<KartuRow>(cmd).ConfigureAwait(false);
+        if (row is null) return null;
         var kartu = new KartuRfid(
-            r.GetString(0), r.GetInt32(1), r.GetInt32(2), r.GetString(3),
-            r.IsDBNull(4) ? null : r.GetByte(4), r.IsDBNull(5) ? null : r.GetByte(5),
-            r.IsDBNull(6) ? null : r.GetString(6), r.IsDBNull(7) ? null : r.GetDateTime(7),
-            r.IsDBNull(8) ? null : r.GetString(8), r.IsDBNull(9) ? null : r.GetDateTime(9));
-        return (kartu, r.GetInt32(10));
+            row.CompanyCode, row.IdKartu, row.IdPengguna, row.UidKartu,
+            row.Status, row.IsDeleted, row.CreatedBy, row.CreatedDate,
+            row.LastUpdatedBy, row.LastUpdatedDate);
+        return (kartu, row.IdPintu);
     }
 
     // Tulis tiap tap ke LOG_AKSES. idKartu = null untuk kartu asing.
@@ -52,42 +52,69 @@ public sealed class SmartDoorDb(string connectionString)
             """;
         await using var con = new SqlConnection(connectionString);
         await con.OpenAsync(ct).ConfigureAwait(false);
-        await using var cmd = new SqlCommand(sql, con);
-        cmd.Parameters.AddWithValue("@co", Company);
-        cmd.Parameters.AddWithValue("@kartu", (object?)idKartu ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@pintu", idPintu);
-        cmd.Parameters.AddWithValue("@uid", uid);
-        cmd.Parameters.AddWithValue("@hasil", hasil);
-        cmd.Parameters.AddWithValue("@actor", actor);
-        await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        var cmd = new CommandDefinition(sql,
+            new { co = Company, kartu = idKartu, pintu = idPintu, uid, hasil, actor },
+            cancellationToken: ct);
+        await con.ExecuteAsync(cmd).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<LogAkses>> ReadLogAsync(
         int limit = 100, CancellationToken ct = default)
     {
         const string sql = """
-            SELECT TOP (@n) CompanyCode, id_log, id_kartu, id_pintu, uid_dipindai,
-                   waktu, hasil, Status, IsDeleted, CreatedBy, CreatedDate,
-                   LastUpdatedBy, LastUpdatedDate
+            SELECT TOP (@n) CompanyCode, id_log AS IdLog, id_kartu AS IdKartu,
+                   id_pintu AS IdPintu, uid_dipindai AS UidDipindai,
+                   waktu AS Waktu, hasil AS Hasil, Status, IsDeleted, CreatedBy,
+                   CreatedDate, LastUpdatedBy, LastUpdatedDate
             FROM dbo.LOG_AKSES
             WHERE CompanyCode = @co AND ISNULL(IsDeleted, 0) = 0
             ORDER BY waktu DESC
             """;
-        var list = new List<LogAkses>();
         await using var con = new SqlConnection(connectionString);
         await con.OpenAsync(ct).ConfigureAwait(false);
-        await using var cmd = new SqlCommand(sql, con);
-        cmd.Parameters.AddWithValue("@n", limit);
-        cmd.Parameters.AddWithValue("@co", Company);
-        await using var r = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        while (await r.ReadAsync(ct).ConfigureAwait(false))
+        var cmd = new CommandDefinition(sql,
+            new { n = limit, co = Company },
+            cancellationToken: ct);
+        var rows = await con.QueryAsync<LogRow>(cmd).ConfigureAwait(false);
+        var list = new List<LogAkses>();
+        foreach (var r in rows)
             list.Add(new LogAkses(
-                r.GetString(0), r.GetInt32(1),
-                r.IsDBNull(2) ? null : r.GetInt32(2), r.GetInt32(3),
-                r.GetString(4), r.GetDateTime(5), r.GetString(6),
-                r.IsDBNull(7) ? null : r.GetByte(7), r.IsDBNull(8) ? null : r.GetByte(8),
-                r.IsDBNull(9) ? null : r.GetString(9), r.IsDBNull(10) ? null : r.GetDateTime(10),
-                r.IsDBNull(11) ? null : r.GetString(11), r.IsDBNull(12) ? null : r.GetDateTime(12)));
+                r.CompanyCode, r.IdLog, r.IdKartu, r.IdPintu, r.UidDipindai,
+                r.Waktu, r.Hasil, r.Status, r.IsDeleted, r.CreatedBy,
+                r.CreatedDate, r.LastUpdatedBy, r.LastUpdatedDate));
         return list;
+    }
+
+    // DTO internal untuk Dapper (nama properti = alias kolom SQL).
+    private sealed class KartuRow
+    {
+        public string CompanyCode { get; set; } = "";
+        public int IdKartu { get; set; }
+        public int IdPengguna { get; set; }
+        public string UidKartu { get; set; } = "";
+        public byte? Status { get; set; }
+        public byte? IsDeleted { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime? CreatedDate { get; set; }
+        public string? LastUpdatedBy { get; set; }
+        public DateTime? LastUpdatedDate { get; set; }
+        public int IdPintu { get; set; }
+    }
+
+    private sealed class LogRow
+    {
+        public string CompanyCode { get; set; } = "";
+        public int IdLog { get; set; }
+        public int? IdKartu { get; set; }
+        public int IdPintu { get; set; }
+        public string UidDipindai { get; set; } = "";
+        public DateTime Waktu { get; set; }
+        public string Hasil { get; set; } = "";
+        public byte? Status { get; set; }
+        public byte? IsDeleted { get; set; }
+        public string? CreatedBy { get; set; }
+        public DateTime? CreatedDate { get; set; }
+        public string? LastUpdatedBy { get; set; }
+        public DateTime? LastUpdatedDate { get; set; }
     }
 }
